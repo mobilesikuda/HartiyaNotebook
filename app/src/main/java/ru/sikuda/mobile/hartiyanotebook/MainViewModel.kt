@@ -14,9 +14,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.net.URL
 
 class MainViewModel() : ViewModel() {
 
@@ -64,20 +68,44 @@ class MainViewModel() : ViewModel() {
 
     fun loadPersons(istream: InputStream) {
 
+//        val connect = Jsoup.connect("https://www.javatpoint.com/") //Jsoup.connect("http://phonebook.hartiya.ru")
+//        try {
+//            val doc2 = connect.get()
+//        }
+//        catch (e: SocketTimeoutException) {
+//            // handler
+//            return
+//        }
+//        catch (e: IOException) {
+//            // handler
+//            return
+//        }
+
         viewModelScope.launch(Dispatchers.IO) {
 
-            //val doc = Jsoup.connect("http://phonebook.hartiya.ru").get()
+            var doc: Document? = null
+            try {
+                //doc = Jsoup.connect("http://phonebook.hartiya.ru/telefons.htm").get().
+                val url = "http://phonebook.hartiya.ru/telefons.htm"
+                doc = Jsoup.parse(URL(url).openStream(), "windows-1251", url)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            //val title: String = doc2?.title() ?: ""
+
             val results = StringBuilder("")
             BufferedReader(InputStreamReader(istream, "windows-1251")).forEachLine {
                 results.append(
                     it
                 )
             }
-            val resultsAsString = results.toString()
+            //val resultsAsString = results.toString()
             val listPersons = mutableListOf<Person>()
-            val doc = Jsoup.parse(resultsAsString)
+            //val doc = Jsoup.parse(resultsAsString)
 
-            val selectElem = doc.select("tbody > tr > td")
+            val selectElem = doc?.select("tbody > tr > td") ?: listOf<Element>()
             var iNumField = 1
             var person = emptyPerson()
             for (item in selectElem) {
@@ -104,7 +132,7 @@ class MainViewModel() : ViewModel() {
             listPersons.sortBy {
                 it.Name
             }
-            _persons.emit(listPersons)
+          _persons.emit(listPersons)
         }
     }
 }

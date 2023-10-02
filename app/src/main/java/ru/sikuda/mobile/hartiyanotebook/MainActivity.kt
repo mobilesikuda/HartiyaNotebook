@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             HartiyaNotebookTheme {
                 //val context = LocalContext.current
@@ -119,6 +120,7 @@ fun ItemList(
 
 @Composable
 fun ItemView(person: Person, switch: (Person) -> Unit) {
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

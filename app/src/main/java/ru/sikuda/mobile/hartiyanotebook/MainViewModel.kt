@@ -14,15 +14,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.net.URL
 
-class MainViewModel() : ViewModel() {
+class MainViewModel : ViewModel() {
 
     private val _searchText = MutableStateFlow("")
     val searchText = _searchText.asStateFlow()
@@ -68,42 +65,25 @@ class MainViewModel() : ViewModel() {
 
     fun loadPersons(istream: InputStream) {
 
-//        val connect = Jsoup.connect("https://www.javatpoint.com/") //Jsoup.connect("http://phonebook.hartiya.ru")
-//        try {
-//            val doc2 = connect.get()
-//        }
-//        catch (e: SocketTimeoutException) {
-//            // handler
-//            return
-//        }
-//        catch (e: IOException) {
-//            // handler
-//            return
-//        }
-
         viewModelScope.launch(Dispatchers.IO) {
 
-            var doc: Document? = null
-            try {
-                //doc = Jsoup.connect("http://phonebook.hartiya.ru/telefons.htm").get().
-                val url = "http://phonebook.hartiya.ru/telefons.htm"
-                doc = Jsoup.parse(URL(url).openStream(), "windows-1251", url)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+//            var doc: Document? = null
+//            try {
+//                //doc = Jsoup.connect("http://phonebook.hartiya.ru/telefons.htm").get().
+//                val url = "http://phonebook.hartiya.ru/telefons.htm"
+//                doc = Jsoup.parse(URL(url).openStream(), "windows-1251", url)
+//            } catch (e: IOException) {
+//                e.printStackTrace()
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
             //val title: String = doc2?.title() ?: ""
 
             val results = StringBuilder("")
-            BufferedReader(InputStreamReader(istream, "windows-1251")).forEachLine {
-                results.append(
-                    it
-                )
-            }
-            //val resultsAsString = results.toString()
+            BufferedReader(InputStreamReader(istream, "windows-1251")).forEachLine { results.append(it) }
+            val resultsAsString = results.toString()
             val listPersons = mutableListOf<Person>()
-            //val doc = Jsoup.parse(resultsAsString)
+            val doc = Jsoup.parse(resultsAsString)
 
             val selectElem = doc?.select("tbody > tr > td") ?: listOf<Element>()
             var iNumField = 1
@@ -111,11 +91,11 @@ class MainViewModel() : ViewModel() {
             for (item in selectElem) {
                 val text = item.text().toString()
                 when (iNumField) {
-                    1 -> person.Name = text
+                    1 -> person.name = text
                     2 -> person.email = text
                     3 -> person.phone = text
-                    4 -> person.phone_add = text
-                    5 -> person.phone_mob = text
+                    4 -> person.phoneAdd = text
+                    5 -> person.phoneMob = text
                     6 -> person.region = text
                     7 -> person.address = text
                     8 -> person.org = text
@@ -130,7 +110,7 @@ class MainViewModel() : ViewModel() {
                 }
             }
             listPersons.sortBy {
-                it.Name
+                it.name
             }
           _persons.emit(listPersons)
         }
@@ -139,11 +119,11 @@ class MainViewModel() : ViewModel() {
 
 
 data class Person(
-    var Name: String,
+    var name: String,
     var email: String,
     var phone: String,
-    var phone_add: String,
-    var phone_mob: String,
+    var phoneAdd: String,
+    var phoneMob: String,
     var region: String,
     var address: String,
     var org: String,
@@ -152,9 +132,8 @@ data class Person(
 ) {
     fun doesMatchSearchQuery(query: String): Boolean {
         val matchingCombinations = listOf(
-            "$Name$email$phone$phone_add$phone_mob$region$address$org$division$position",
-            "$Name $email $phone $phone_add $phone_mob $region $address $org $division $position",
-            "${Name.first()} ${Name.split(" ")[1].first()} ${Name.split(" ")[2]}",
+            "$name$email$phone$phoneAdd$phoneMob$region$address$org$division$position",
+            "$name $email $phone $phoneAdd $phoneMob $region $address $org $division $position"
         )
 
         return matchingCombinations.any {

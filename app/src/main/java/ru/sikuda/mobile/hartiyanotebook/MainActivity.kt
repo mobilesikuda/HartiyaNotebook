@@ -1,6 +1,7 @@
 package ru.sikuda.mobile.hartiyanotebook
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -51,7 +52,8 @@ class MainActivity : ComponentActivity() {
 
                 val viewModel = viewModel<MainViewModel>()
                 val istream = assets.open("list.html")
-                viewModel.loadPersons(istream)
+                viewModel.initPersons(istream)
+                viewModel.updatePersons()
 
                 val searchText by viewModel.searchText.collectAsState()
                 val persons by viewModel.persons.collectAsState()
@@ -147,6 +149,7 @@ fun ItemList(
 //}
 
 private const val REQUEST = 112
+@SuppressLint("SuspiciousIndentation")
 fun CheckCall(context: Context, intent: Intent){
     val permission = Manifest.permission.CALL_PHONE
 //    if (!hasPermission(context, permission)) {

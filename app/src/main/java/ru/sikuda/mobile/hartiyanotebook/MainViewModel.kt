@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
+import org.jsoup.nodes.Document
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.net.URL
 
 class MainViewModel : ViewModel() {
 
@@ -63,60 +65,71 @@ class MainViewModel : ViewModel() {
         _isOpenCard.value = !_isOpenCard.value
     }
 
-    fun loadPersons(istream: InputStream) {
-
+    fun initPersons(istream: InputStream) {
         viewModelScope.launch(Dispatchers.IO) {
+            val results = StringBuilder()
+            BufferedReader(
+                InputStreamReader(istream, "windows-1251")
+            )
+                .forEachLine { results.append(it) }
 
-//            var doc: Document? = null
-//            try {
-//                //doc = Jsoup.connect("http://phonebook.hartiya.ru/telefons.htm").get().
-//                val url = "http://phonebook.hartiya.ru/telefons.htm"
-//                doc = Jsoup.parse(URL(url).openStream(), "windows-1251", url)
-//            } catch (e: IOException) {
-//                e.printStackTrace()
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-            //val title: String = doc2?.title() ?: ""
+            val listPersons = loadPersons(Jsoup.parse(results.toString()))
+            if (listPersons.isNotEmpty()) _persons.emit(listPersons)
+        }
+    }
 
-            val results = StringBuilder("")
-            BufferedReader(InputStreamReader(istream, "windows-1251")).forEachLine { results.append(it) }
-            val resultsAsString = results.toString()
-            val listPersons = mutableListOf<Person>()
-            val doc = Jsoup.parse(resultsAsString)
-
-            val selectElem = doc?.select("tbody > tr > td") ?: listOf<Element>()
-            var iNumField = 1
-            var person = emptyPerson()
-            for (item in selectElem) {
-                val text = item.text().toString()
-                when (iNumField) {
-                    1 -> person.name = text
-                    2 -> person.email = text
-                    3 -> person.phone = text
-                    4 -> person.phoneAdd = text
-                    5 -> person.phoneMob = text
-                    6 -> person.region = text
-                    7 -> person.address = text
-                    8 -> person.org = text
-                    9 -> person.division = text
-                    10 -> person.position = text
-                }
-                iNumField++
-                if (iNumField == 11) {
-                    listPersons.add(person)
-                    person = emptyPerson()
-                    iNumField = 1
-                }
+    fun updatePersons() {
+        viewModelScope.launch(Dispatchers.IO) {
+            var doc: Document? = null
+            try {
+                val url = "http://phonebook.hartiya.ru/telefons.htm"
+                doc = Jsoup.parse(URL(url).openStream(), "windows-1251", url)
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            listPersons.sortBy {
-                it.name
+            if (doc != null) loadPersons(doc)
+            doc?.let {
+                val listPersons = loadPersons(it)
+                if (listPersons.isNotEmpty()) _persons.emit(listPersons)
             }
-          _persons.emit(listPersons)
         }
     }
 }
 
+fun loadPersons(doc: Document): MutableList<Person> {
+
+    val listPersons = mutableListOf<Person>()
+    val selectElem = doc.select("tbody > tr > td")
+    var iNumField = 1
+    var person = emptyPerson()
+    for (item in selectElem) {
+        val text = item.text().toString()
+        when (iNumField) {
+            1 -> person.name = text
+            2 -> person.email = text
+            3 -> person.phone = text
+            4 -> person.phoneAdd = text
+            5 -> person.phoneMob = text
+            6 -> person.region = text
+            7 -> person.address = text
+            8 -> person.org = text
+            9 -> person.division = text
+            10 -> person.position = text
+        }
+        iNumField++
+        if (iNumField == 11) {
+            listPersons.add(person)
+            person = emptyPerson()
+            iNumField = 1
+        }
+    }
+    listPersons.sortBy {
+        it.name
+    }
+    return listPersons
+}
 
 data class Person(
     var name: String,
@@ -143,33 +156,6 @@ data class Person(
 }
 
 private var allPersons = mutableListOf<Person>()
-
-//private var allPersons2 = mutableListOf(
-//    Person(
-//        Name = "Абдиев Рамиль Муратович",
-//        email = "r.abdiev@hartiya.ru",
-//        phone = "+74872251498",
-//        phone_add = "7213",
-//        phone_mob = "",
-//        region = "Тула",
-//        address = "деревня Малая Еловая, 8-ой километр а/д \"Тула-Новомосковск\", строение 1",
-//        org = "ОП ЭКО-ТЕХНОПАРК «ТУЛА»",
-//        division = "Производственный участок №1",
-//        position = "Мастер смены",
-//    ),
-//    Person(
-//        Name = "Абдуллин Рафаэль Рифатович",
-//        email = "r.abdiev@hartiya.ru",
-//        phone = "+74872251498",
-//        phone_add = "7213",
-//        phone_mob = "",
-//        region = "Тула",
-//        address = "деревня Малая Еловая, 8-ой километр а/д \"Тула-Новомосковск\", строение 1",
-//        org = "ОП ЭКО-ТЕХНОПАРК «ТУЛА»",
-//        division = "Производственный участок №1",
-//        position = "Мастер смены",
-//    ),
-//)
 
 fun emptyPerson(): Person {
     return Person("", "", "", "", "", "", "", "", "", "")
